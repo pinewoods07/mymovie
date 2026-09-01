@@ -3,9 +3,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-# ─────────────────────────────────────────
-# 페이지 설정
-# ─────────────────────────────────────────
 st.set_page_config(
     page_title="🎬 영화 데이터 그래프 도감",
     page_icon="🎬",
@@ -39,7 +36,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
-# 공통 그래프 레이아웃 (fig1, fig2 전용)
+# 공통 레이아웃
+# fig1, fig2 전용 (날짜 x축)
 # ─────────────────────────────────────────
 CHART_LAYOUT = dict(
     plot_bgcolor='#12121f',
@@ -55,12 +53,11 @@ CHART_LAYOUT = dict(
     margin=dict(t=60, b=40, l=60, r=30),
 )
 
-# fig3~5 공통 베이스 (xaxis/yaxis 없이)
+# fig3~5 전용: 겹치는 키 없이 최소한만
 BASE_LAYOUT = dict(
     plot_bgcolor='#12121f',
     paper_bgcolor='#12121f',
     font=dict(color='#cccccc', family='Malgun Gothic, sans-serif'),
-    margin=dict(t=60, b=40, l=60, r=30),
 )
 
 COLORS = ['#e50914', '#ffd700', '#00cfff', '#ff7f50', '#90ee90']
@@ -248,22 +245,15 @@ fig3.add_trace(go.Scatter(
 ))
 fig3.update_layout(
     **BASE_LAYOUT,
-    title=dict(
-        text='<b>날짜별 박스오피스 10위권 일관객 합계</b>',
-        font=dict(size=17, color='#ffffff'),
-        x=0.5, xanchor='center'
-    ),
-    xaxis=dict(
-        showgrid=True, gridcolor='#222244',
-        tickformat='%Y-%m-%d', tickangle=-30,
-        title='날짜', title_font=dict(color='#aaaaaa')
-    ),
-    yaxis=dict(
-        showgrid=True, gridcolor='#222244',
-        tickformat=',',
-        title='일관객 합계 (명)', title_font=dict(color='#aaaaaa')
-    ),
+    title=dict(text='<b>날짜별 박스오피스 10위권 일관객 합계</b>',
+               font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
+    xaxis=dict(showgrid=True, gridcolor='#222244',
+               tickformat='%Y-%m-%d', tickangle=-30,
+               title='날짜', title_font=dict(color='#aaaaaa')),
+    yaxis=dict(showgrid=True, gridcolor='#222244', tickformat=',',
+               title='일관객 합계 (명)', title_font=dict(color='#aaaaaa')),
     hovermode='x unified',
+    margin=dict(t=60, b=40, l=60, r=30),
     legend=dict(bgcolor='rgba(0,0,0,0)', bordercolor='#333355', borderwidth=1)
 )
 st.plotly_chart(fig3, use_container_width=True)
@@ -308,7 +298,7 @@ days_in_top10 = (df.groupby('영화명')
                    .size()
                    .reset_index(name='10위권날수'))
 
-top10 = top10.merge(days_in_top10, on='영화명')
+top10        = top10.merge(days_in_top10, on='영화명')
 top10_sorted = top10.sort_values('누적관객', ascending=True)
 
 fig4 = go.Figure()
@@ -318,11 +308,7 @@ fig4.add_trace(go.Bar(
     orientation='h',
     marker=dict(
         color=top10_sorted['누적관객'],
-        colorscale=[
-            [0,   '#7b0000'],
-            [0.5, '#e50914'],
-            [1,   '#ffd700'],
-        ],
+        colorscale=[[0,'#7b0000'],[0.5,'#e50914'],[1,'#ffd700']],
         showscale=False,
     ),
     customdata=top10_sorted['10위권날수'],
@@ -336,30 +322,19 @@ fig4.add_trace(go.Bar(
     textposition='outside',
     textfont=dict(color='#cccccc', size=11),
 ))
-
-# ✅ BASE_LAYOUT 사용 + xaxis/yaxis/title 직접 지정
 fig4.update_layout(
-    **BASE_LAYOUT,
-    title=dict(
-        text='<b>흥행 TOP 10</b> 누적 관객수',
-        font=dict(size=17, color='#ffffff'),
-        x=0.5, xanchor='center'
-    ),
-    xaxis=dict(
-        showgrid=True, gridcolor='#222244',
-        tickformat=',',
-        title='누적 관객수 (명)',
-        title_font=dict(color='#aaaaaa'),
-    ),
-    yaxis=dict(
-        showgrid=False, title='',
-        tickfont=dict(size=12, color='#ffffff'),
-        automargin=True,
-    ),
+    **BASE_LAYOUT,                          # ✅ margin 없는 BASE_LAYOUT
+    title=dict(text='<b>흥행 TOP 10</b> 누적 관객수',
+               font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
+    xaxis=dict(showgrid=True, gridcolor='#222244',
+               tickformat=',', title='누적 관객수 (명)',
+               title_font=dict(color='#aaaaaa')),
+    yaxis=dict(showgrid=False, title='',
+               tickfont=dict(size=12, color='#ffffff'),
+               automargin=True),
     hovermode='y unified',
-    margin=dict(t=60, b=40, l=160, r=100),
+    margin=dict(t=60, b=40, l=160, r=100),  # ✅ 여기서 직접 지정
 )
-
 st.plotly_chart(fig4, use_container_width=True)
 
 st.markdown("""
@@ -386,7 +361,7 @@ st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown('<div class="section-header">🗓️ 5. 월 × 요일별 일관객 합계 히트맵</div>',
             unsafe_allow_html=True)
 
-heatmap_df = df.copy()
+heatmap_df        = df.copy()
 heatmap_df['월']  = heatmap_df['날짜'].dt.month
 heatmap_df['요일'] = heatmap_df['날짜'].dt.dayofweek
 
@@ -402,41 +377,23 @@ fig5 = go.Figure(data=go.Heatmap(
     z=pivot.values,
     x=month_labels,
     y=DAY_LABELS,
-    colorscale=[
-        [0,    '#0f0f1a'],
-        [0.25, '#7b0000'],
-        [0.6,  '#e50914'],
-        [1,    '#ffd700'],
-    ],
+    colorscale=[[0,'#0f0f1a'],[0.25,'#7b0000'],[0.6,'#e50914'],[1,'#ffd700']],
     hovertemplate='%{x} %{y}요일<br>일관객 합계: %{z:,}명<extra></extra>',
     showscale=True,
-    colorbar=dict(
-        title='일관객 합계',
-        tickformat=',',
-        titlefont=dict(color='#aaaaaa'),
-        tickfont=dict(color='#aaaaaa'),
-    ),
+    colorbar=dict(title='일관객 합계', tickformat=',',
+                  titlefont=dict(color='#aaaaaa'),
+                  tickfont=dict(color='#aaaaaa')),
 ))
-
 fig5.update_layout(
-    **BASE_LAYOUT,
-    title=dict(
-        text='<b>월 × 요일별</b> 일관객 합계',
-        font=dict(size=17, color='#ffffff'),
-        x=0.5, xanchor='center'
-    ),
-    xaxis=dict(
-        title='월', title_font=dict(color='#aaaaaa'),
-        tickfont=dict(size=12)
-    ),
-    yaxis=dict(
-        title='요일', title_font=dict(color='#aaaaaa'),
-        tickfont=dict(size=13),
-        autorange='reversed'
-    ),
-    margin=dict(t=60, b=40, l=60, r=60),
+    **BASE_LAYOUT,                          # ✅ margin 없는 BASE_LAYOUT
+    title=dict(text='<b>월 × 요일별</b> 일관객 합계',
+               font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
+    xaxis=dict(title='월', title_font=dict(color='#aaaaaa'),
+               tickfont=dict(size=12)),
+    yaxis=dict(title='요일', title_font=dict(color='#aaaaaa'),
+               tickfont=dict(size=13), autorange='reversed'),
+    margin=dict(t=60, b=40, l=60, r=60),   # ✅ 여기서 직접 지정
 )
-
 st.plotly_chart(fig5, use_container_width=True)
 
 st.markdown("""
@@ -446,7 +403,7 @@ st.markdown("""
 </div>""", unsafe_allow_html=True)
 
 with st.expander("📋 월×요일 합계 상세 데이터"):
-    show5 = pivot.copy()
+    show5         = pivot.copy()
     show5.index   = DAY_LABELS
     show5.columns = month_labels
     show5 = show5.map(lambda x: f"{int(x):,}명" if pd.notna(x) else "-")
