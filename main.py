@@ -238,21 +238,31 @@ fig3.add_trace(go.Scatter(
     hovertemplate='<b>🏆 %{x|%Y-%m-%d}</b><br>합계 관객: %{y:,}명<extra></extra>',
     name='Top 3일'
 ))
+
+# ✅ CHART_LAYOUT 대신 필요한 항목만 직접 지정
 fig3.update_layout(
-    **CHART_LAYOUT,
-    title='<b>날짜별 박스오피스 10위권 일관객 합계</b>',
-    yaxis_title='일관객 합계 (명)',
-    xaxis_title='날짜',
+    plot_bgcolor='#12121f',
+    paper_bgcolor='#12121f',
+    font=dict(color='#cccccc', family='Malgun Gothic, sans-serif'),
+    title=dict(
+        text='<b>날짜별 박스오피스 10위권 일관객 합계</b>',
+        font=dict(size=17, color='#ffffff'),
+        x=0.5, xanchor='center'
+    ),
+    xaxis=dict(
+        showgrid=True, gridcolor='#222244',
+        tickformat='%Y-%m-%d', tickangle=-30,   # 날짜 형식 명시
+        title='날짜', title_font=dict(color='#aaaaaa')
+    ),
+    yaxis=dict(
+        showgrid=True, gridcolor='#222244',
+        tickformat=',',
+        title='일관객 합계 (명)', title_font=dict(color='#aaaaaa')
+    ),
+    hovermode='x unified',
+    margin=dict(t=60, b=40, l=60, r=30),
     legend=dict(bgcolor='rgba(0,0,0,0)', bordercolor='#333355', borderwidth=1)
 )
-st.plotly_chart(fig3, use_container_width=True)
-
-st.markdown("#### ⭐ 관객 합계 TOP 3일")
-t_cols = st.columns(3)
-for i, (_, row) in enumerate(top3_days.iterrows()):
-    t_cols[i].metric(
-        f"{'🥇' if i==0 else '🥈' if i==1 else '🥉'} {row['날짜'].strftime('%Y-%m-%d')}",
-        f"{int(row['일관객합계']):,}명"
     )
 
 st.markdown("""
