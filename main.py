@@ -39,7 +39,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─────────────────────────────────────────
-# 공통 그래프 레이아웃
+# 공통 그래프 레이아웃 (fig1, fig2 전용)
 # ─────────────────────────────────────────
 CHART_LAYOUT = dict(
     plot_bgcolor='#12121f',
@@ -52,6 +52,14 @@ CHART_LAYOUT = dict(
     yaxis=dict(showgrid=True, gridcolor='#222244',
                tickformat=',', title_font=dict(color='#aaaaaa')),
     hovermode='x unified',
+    margin=dict(t=60, b=40, l=60, r=30),
+)
+
+# fig3~5 공통 베이스 (xaxis/yaxis 없이)
+BASE_LAYOUT = dict(
+    plot_bgcolor='#12121f',
+    paper_bgcolor='#12121f',
+    font=dict(color='#cccccc', family='Malgun Gothic, sans-serif'),
     margin=dict(t=60, b=40, l=60, r=30),
 )
 
@@ -238,12 +246,8 @@ fig3.add_trace(go.Scatter(
     hovertemplate='<b>🏆 %{x|%Y-%m-%d}</b><br>합계 관객: %{y:,}명<extra></extra>',
     name='Top 3일'
 ))
-
-# ✅ 오류 1 수정: 닫는 괄호 하나 제거
 fig3.update_layout(
-    plot_bgcolor='#12121f',
-    paper_bgcolor='#12121f',
-    font=dict(color='#cccccc', family='Malgun Gothic, sans-serif'),
+    **BASE_LAYOUT,
     title=dict(
         text='<b>날짜별 박스오피스 10위권 일관객 합계</b>',
         font=dict(size=17, color='#ffffff'),
@@ -260,11 +264,8 @@ fig3.update_layout(
         title='일관객 합계 (명)', title_font=dict(color='#aaaaaa')
     ),
     hovermode='x unified',
-    margin=dict(t=60, b=40, l=60, r=30),
     legend=dict(bgcolor='rgba(0,0,0,0)', bordercolor='#333355', borderwidth=1)
 )
-
-# ✅ 오류 2 수정: 그래프 출력 추가
 st.plotly_chart(fig3, use_container_width=True)
 
 st.markdown("#### ⭐ 관객 합계 TOP 3일")
@@ -336,13 +337,18 @@ fig4.add_trace(go.Bar(
     textfont=dict(color='#cccccc', size=11),
 ))
 
+# ✅ BASE_LAYOUT 사용 + xaxis/yaxis/title 직접 지정
 fig4.update_layout(
-    **{k: v for k, v in CHART_LAYOUT.items()
-       if k not in ('xaxis', 'yaxis', 'hovermode')},
-    title='<b>흥행 TOP 10</b> 누적 관객수',
+    **BASE_LAYOUT,
+    title=dict(
+        text='<b>흥행 TOP 10</b> 누적 관객수',
+        font=dict(size=17, color='#ffffff'),
+        x=0.5, xanchor='center'
+    ),
     xaxis=dict(
         showgrid=True, gridcolor='#222244',
-        tickformat=',', title='누적 관객수 (명)',
+        tickformat=',',
+        title='누적 관객수 (명)',
         title_font=dict(color='#aaaaaa'),
     ),
     yaxis=dict(
@@ -413,17 +419,21 @@ fig5 = go.Figure(data=go.Heatmap(
 ))
 
 fig5.update_layout(
-    title='<b>월 × 요일별</b> 일관객 합계',
-    paper_bgcolor='#12121f',
-    plot_bgcolor='#12121f',
-    font=dict(color='#cccccc', family='Malgun Gothic, sans-serif'),
-    title_font=dict(size=17, color='#ffffff'),
-    title_x=0.5,
-    xaxis=dict(title='월', title_font=dict(color='#aaaaaa'),
-               tickfont=dict(size=12)),
-    yaxis=dict(title='요일', title_font=dict(color='#aaaaaa'),
-               tickfont=dict(size=13),
-               autorange='reversed'),
+    **BASE_LAYOUT,
+    title=dict(
+        text='<b>월 × 요일별</b> 일관객 합계',
+        font=dict(size=17, color='#ffffff'),
+        x=0.5, xanchor='center'
+    ),
+    xaxis=dict(
+        title='월', title_font=dict(color='#aaaaaa'),
+        tickfont=dict(size=12)
+    ),
+    yaxis=dict(
+        title='요일', title_font=dict(color='#aaaaaa'),
+        tickfont=dict(size=13),
+        autorange='reversed'
+    ),
     margin=dict(t=60, b=40, l=60, r=60),
 )
 
