@@ -380,20 +380,27 @@ fig5 = go.Figure(data=go.Heatmap(
     colorscale=[[0,'#0f0f1a'],[0.25,'#7b0000'],[0.6,'#e50914'],[1,'#ffd700']],
     hovertemplate='%{x} %{y}요일<br>일관객 합계: %{z:,}명<extra></extra>',
     showscale=True,
-    colorbar=dict(title='일관객 합계', tickformat=',',
-                  titlefont=dict(color='#aaaaaa'),
-                  tickfont=dict(color='#aaaaaa')),
+    colorbar=dict(
+        title=dict(
+            text='일관객 합계',
+            font=dict(color='#aaaaaa')   # ✅ 최신 문법
+        ),
+        tickformat=',',
+        tickfont=dict(color='#aaaaaa')
+    ),
 ))
+
 fig5.update_layout(
-    **BASE_LAYOUT,                          # ✅ margin 없는 BASE_LAYOUT
+    **BASE_LAYOUT,
     title=dict(text='<b>월 × 요일별</b> 일관객 합계',
                font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
     xaxis=dict(title='월', title_font=dict(color='#aaaaaa'),
                tickfont=dict(size=12)),
     yaxis=dict(title='요일', title_font=dict(color='#aaaaaa'),
                tickfont=dict(size=13), autorange='reversed'),
-    margin=dict(t=60, b=40, l=60, r=60),   # ✅ 여기서 직접 지정
+    margin=dict(t=60, b=40, l=60, r=60),
 )
+
 st.plotly_chart(fig5, use_container_width=True)
 
 st.markdown("""
