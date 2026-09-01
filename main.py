@@ -239,7 +239,7 @@ fig3.add_trace(go.Scatter(
     name='Top 3일'
 ))
 
-# ✅ CHART_LAYOUT 대신 필요한 항목만 직접 지정
+# ✅ 오류 1 수정: 닫는 괄호 하나 제거
 fig3.update_layout(
     plot_bgcolor='#12121f',
     paper_bgcolor='#12121f',
@@ -251,7 +251,7 @@ fig3.update_layout(
     ),
     xaxis=dict(
         showgrid=True, gridcolor='#222244',
-        tickformat='%Y-%m-%d', tickangle=-30,   # 날짜 형식 명시
+        tickformat='%Y-%m-%d', tickangle=-30,
         title='날짜', title_font=dict(color='#aaaaaa')
     ),
     yaxis=dict(
@@ -263,6 +263,16 @@ fig3.update_layout(
     margin=dict(t=60, b=40, l=60, r=30),
     legend=dict(bgcolor='rgba(0,0,0,0)', bordercolor='#333355', borderwidth=1)
 )
+
+# ✅ 오류 2 수정: 그래프 출력 추가
+st.plotly_chart(fig3, use_container_width=True)
+
+st.markdown("#### ⭐ 관객 합계 TOP 3일")
+t_cols = st.columns(3)
+for i, (_, row) in enumerate(top3_days.iterrows()):
+    t_cols[i].metric(
+        f"{'🥇' if i==0 else '🥈' if i==1 else '🥉'} {row['날짜'].strftime('%Y-%m-%d')}",
+        f"{int(row['일관객합계']):,}명"
     )
 
 st.markdown("""
@@ -287,30 +297,26 @@ st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown('<div class="section-header">🎖️ 4. 흥행 TOP 10 영화 누적 관객 순위</div>',
             unsafe_allow_html=True)
 
-# TOP 10 집계 + 10위권 등재 날수 계산
 top10 = (df.groupby('영화명')['일관객']
            .sum()
            .nlargest(10)
            .reset_index()
            .rename(columns={'일관객':'누적관객'}))
 
-# 10위권에 든 날수 = 해당 영화가 데이터에 등장한 행 수
 days_in_top10 = (df.groupby('영화명')
                    .size()
                    .reset_index(name='10위권날수'))
 
 top10 = top10.merge(days_in_top10, on='영화명')
-
-# 관객 많은 영화가 위에 오도록 오름차순 정렬 (Plotly 가로 막대는 아래→위)
 top10_sorted = top10.sort_values('누적관객', ascending=True)
 
 fig4 = go.Figure()
 fig4.add_trace(go.Bar(
     x=top10_sorted['누적관객'],
     y=top10_sorted['영화명'],
-    orientation='h',                          # 가로 막대
+    orientation='h',
     marker=dict(
-        color=top10_sorted['누적관객'],        # 값 크기에 따라 색상 그라데이션
+        color=top10_sorted['누적관객'],
         colorscale=[
             [0,   '#7b0000'],
             [0.5, '#e50914'],
@@ -318,7 +324,6 @@ fig4.add_trace(go.Bar(
         ],
         showscale=False,
     ),
-    # 마우스 오버 툴팁: 누적 관객 + 10위권 날수
     customdata=top10_sorted['10위권날수'],
     hovertemplate=(
         '<b>%{y}</b><br>'
@@ -333,7 +338,7 @@ fig4.add_trace(go.Bar(
 
 fig4.update_layout(
     **{k: v for k, v in CHART_LAYOUT.items()
-       if k not in ('xaxis', 'yaxis', 'hovermode')},   # 기본 레이아웃 재사용
+       if k not in ('xaxis', 'yaxis', 'hovermode')},
     title='<b>흥행 TOP 10</b> 누적 관객수',
     xaxis=dict(
         showgrid=True, gridcolor='#222244',
@@ -361,7 +366,7 @@ st.markdown("""
 with st.expander("📋 TOP 10 상세 데이터"):
     show4 = top10_sorted.sort_values('누적관객', ascending=False).copy()
     show4.index = range(1, 11)
-    show4['누적관객']    = show4['누적관객'].apply(lambda x: f"{int(x):,}명")
+    show4['누적관객']   = show4['누적관객'].apply(lambda x: f"{int(x):,}명")
     show4['10위권날수'] = show4['10위권날수'].apply(lambda x: f"{x}일")
     show4.columns = ['영화명', '누적 관객수', '10위권 등재 날수']
     st.dataframe(show4, use_container_width=True)
@@ -375,20 +380,16 @@ st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown('<div class="section-header">🗓️ 5. 월 × 요일별 일관객 합계 히트맵</div>',
             unsafe_allow_html=True)
 
-# 월·요일 파생 컬럼 생성
 heatmap_df = df.copy()
 heatmap_df['월']  = heatmap_df['날짜'].dt.month
-heatmap_df['요일'] = heatmap_df['날짜'].dt.dayofweek   # 0=월 ~ 6=일
+heatmap_df['요일'] = heatmap_df['날짜'].dt.dayofweek
 
-# 월×요일별 합계 피벗
 pivot = (heatmap_df.groupby(['월','요일'])['일관객']
                    .sum()
                    .reset_index()
                    .pivot(index='요일', columns='월', values='일관객'))
 
-# 요일 레이블 (월→일 순서)
-DAY_LABELS = ['월','화','수','목','금','토','일']
-# 월 레이블
+DAY_LABELS   = ['월','화','수','목','금','토','일']
 month_labels = [f"{m}월" for m in pivot.columns]
 
 fig5 = go.Figure(data=go.Heatmap(
@@ -396,10 +397,10 @@ fig5 = go.Figure(data=go.Heatmap(
     x=month_labels,
     y=DAY_LABELS,
     colorscale=[
-        [0,    '#0f0f1a'],   # 가장 어두운 색 (관객 적음)
+        [0,    '#0f0f1a'],
         [0.25, '#7b0000'],
         [0.6,  '#e50914'],
-        [1,    '#ffd700'],   # 가장 밝은 색 (관객 많음)
+        [1,    '#ffd700'],
     ],
     hovertemplate='%{x} %{y}요일<br>일관객 합계: %{z:,}명<extra></extra>',
     showscale=True,
@@ -422,7 +423,7 @@ fig5.update_layout(
                tickfont=dict(size=12)),
     yaxis=dict(title='요일', title_font=dict(color='#aaaaaa'),
                tickfont=dict(size=13),
-               autorange='reversed'),   # 월요일이 위에 오도록
+               autorange='reversed'),
     margin=dict(t=60, b=40, l=60, r=60),
 )
 
@@ -432,12 +433,11 @@ st.markdown("""
 <div class="info-box">
 💡 <b>색이 진할수록 관객이 많습니다.</b>
 주말(토·일)과 특정 월(여름·겨울 방학, 명절 연휴 등)에 관객이 집중되는 패턴을 읽어보세요.
-가로축(월)과 세로축(요일)을 함께 보면 언제 영화관이 가장 붐비는지 알 수 있습니다.
 </div>""", unsafe_allow_html=True)
 
 with st.expander("📋 월×요일 합계 상세 데이터"):
     show5 = pivot.copy()
     show5.index   = DAY_LABELS
     show5.columns = month_labels
-    show5 = show5.applymap(lambda x: f"{int(x):,}명" if pd.notna(x) else "-")
+    show5 = show5.map(lambda x: f"{int(x):,}명" if pd.notna(x) else "-")
     st.dataframe(show5, use_container_width=True)
