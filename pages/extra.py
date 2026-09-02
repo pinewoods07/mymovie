@@ -15,39 +15,80 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    .stApp { background-color: #0f0f1a; color: #ffffff; }
+    /* 전체 배경 */
+    .stApp { background-color: #0f0f1a; color: #f0f0f0; }
+
+    /* 사이드바 */
+    [data-testid="stSidebar"] {
+        background-color: #1a1a2e;
+        border-right: 1px solid #e50914;
+    }
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] li,
+    [data-testid="stSidebar"] span {
+        color: #f0f0f0 !important;
+    }
+
+    /* 섹션 헤더 */
     .section-header {
         font-size: 1.3rem; font-weight: 700; color: #ffd700;
-        border-left: 4px solid #e50914;
-        padding-left: 12px; margin: 10px 0 20px 0;
+        border-left: 5px solid #e50914;
+        padding: 6px 0 6px 14px;
+        margin: 10px 0 20px 0;
+        background: linear-gradient(90deg, rgba(229,9,20,0.12), transparent);
+        border-radius: 0 8px 8px 0;
     }
+
+    /* 인포 박스 */
     .info-box {
-        background: #1a2a1a; border: 1px solid #2a5a2a;
-        border-radius: 10px; padding: 14px 18px;
-        color: #90ee90; font-size: 0.92rem; margin-top: 12px;
+        background: linear-gradient(135deg, #1a2a1a, #162216);
+        border: 1px solid #3a7a3a;
+        border-radius: 10px;
+        padding: 14px 20px;
+        color: #b8f0b8;
+        font-size: 0.93rem;
+        margin-top: 14px;
+        line-height: 1.7;
     }
-    hr {
+
+    /* metric 카드 글자 */
+    [data-testid="stMetricLabel"] { color: #aaaaaa !important; }
+    [data-testid="stMetricValue"] { color: #ffffff !important; }
+
+    /* expander 헤더 */
+    [data-testid="stExpander"] summary {
+        color: #ffd700 !important;
+        font-weight: 600;
+    }
+
+    /* 구분선 */
+    .custom-hr {
         border: none; height: 1px;
         background: linear-gradient(90deg, transparent, #e50914, transparent);
-        margin: 28px 0;
+        margin: 36px 0;
     }
-    [data-testid="stSidebar"] {
-        background-color: #12121f;
-        border-right: 1px solid #333355;
+
+    /* 데이터프레임 */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #333355;
+        border-radius: 8px;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# ─────────────────────────────────────────
+# 공통 레이아웃
+# ─────────────────────────────────────────
 BASE_LAYOUT = dict(
     plot_bgcolor='#12121f',
-    paper_bgcolor='#12121f',
-    font=dict(color='#cccccc', family='Malgun Gothic, sans-serif'),
+    paper_bgcolor='#1a1a2e',          # 그래프 바깥 배경을 약간 밝게
+    font=dict(color='#e0e0e0', family='Malgun Gothic, sans-serif'),
 )
 
 DONUT_COLORS = [
     '#e50914','#ffd700','#00cfff','#ff7f50','#90ee90',
     '#da70d6','#87ceeb','#f08080','#98fb98','#dda0dd',
-    '#b0c4de','#ffe4b5','#afeeee','#ffb6c1','#d3d3d3',
+    '#b0c4de','#ffe4b5','#afeeee','#ffb6c1','#c8c8c8',
 ]
 
 # ─────────────────────────────────────────
@@ -63,6 +104,11 @@ def load_data():
 
 df = load_data()
 
+# 장르별 색상 매핑 (전역 사용)
+genres_sorted  = sorted(df['genre'].unique())
+genre_color_map = {g: DONUT_COLORS[i % len(DONUT_COLORS)]
+                   for i, g in enumerate(genres_sorted)}
+
 # ─────────────────────────────────────────
 # 사이드바
 # ─────────────────────────────────────────
@@ -72,7 +118,11 @@ with st.sidebar:
     st.markdown(f"**총 영화 수:** {len(df)}편")
     st.markdown(f"**장르 수:** {df['genre'].nunique()}개")
     st.markdown(f"**제작 국가 수:** {df['nation'].nunique()}개")
-    st.markdown(f"**개봉 기간:** {df['openDt'].min().strftime('%Y.%m.%d')} ~ {df['openDt'].max().strftime('%Y.%m.%d')}")
+    st.markdown(
+        f"**개봉 기간:**  \n"
+        f"{df['openDt'].min().strftime('%Y.%m.%d')} ~ "
+        f"{df['openDt'].max().strftime('%Y.%m.%d')}"
+    )
     st.markdown("---")
     st.caption("출처: 영화진흥위원회 (KOBIS)")
 
@@ -83,18 +133,28 @@ st.markdown("""
 <h1 style='text-align:center; font-size:2.4rem; font-weight:800;
            background:linear-gradient(90deg,#e50914,#ff6b6b,#ffd700);
            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-           padding: 16px 0 4px 0;'>
+           padding:16px 0 4px 0; letter-spacing:1px;'>
     🎬 영화 데이터 그래프 도감 2
 </h1>
-<p style='text-align:center; color:#aaaaaa; margin-bottom:24px;'>
+<p style='text-align:center; color:#aaaaaa; margin-bottom:8px; font-size:1rem;'>
     분포와 관계 — 216편 요약 데이터 분석
 </p>
 """, unsafe_allow_html=True)
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
+
+# 요약 지표
+m1, m2, m3, m4 = st.columns(4)
+m1.metric("🎬 총 영화 수",   f"{len(df)}편")
+m2.metric("🎭 장르 수",      f"{df['genre'].nunique()}개")
+m3.metric("🌏 제작 국가 수", f"{df['nation'].nunique()}개")
+m4.metric("👑 최고 흥행작",
+          df.loc[df['total_audi'].idxmax(), 'movieNm'])
+
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 
 
 # ═════════════════════════════════════════
-# 섹션 1: 장르별 영화 편수 도넛 그래프
+# 섹션 1: 장르별 영화 편수 도넛
 # ═════════════════════════════════════════
 st.markdown('<div class="section-header">🍩 1. 장르별 영화 편수</div>',
             unsafe_allow_html=True)
@@ -112,12 +172,7 @@ fig1 = go.Figure(data=go.Pie(
         colors=DONUT_COLORS[:len(genre_count)],
         line=dict(color='#0f0f1a', width=2)
     ),
-    hovertemplate=(
-        '<b>%{label}</b><br>'
-        '편수: %{value}편<br>'
-        '비율: %{percent}<br>'
-        '<extra></extra>'
-    ),
+    hovertemplate='<b>%{label}</b><br>편수: %{value}편<br>비율: %{percent}<extra></extra>',
     textinfo='label+percent',
     textfont=dict(size=12, color='#ffffff'),
     insidetextorientation='auto',
@@ -126,14 +181,14 @@ fig1.update_layout(
     **BASE_LAYOUT,
     title=dict(text='<b>장르별 영화 편수</b>',
                font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
-    legend=dict(bgcolor='rgba(18,18,31,0.9)', bordercolor='#333355',
-                borderwidth=1, font=dict(size=11)),
+    legend=dict(bgcolor='rgba(26,26,46,0.95)', bordercolor='#444466',
+                borderwidth=1, font=dict(size=11, color='#e0e0e0')),
     margin=dict(t=60, b=40, l=40, r=40),
 )
 fig1.add_annotation(
     text=f"총<br><b>{len(df)}편</b>",
     x=0.5, y=0.5,
-    font=dict(size=16, color='#ffffff'),
+    font=dict(size=16, color='#ffffff', family='Malgun Gothic, sans-serif'),
     showarrow=False
 )
 st.plotly_chart(fig1, use_container_width=True)
@@ -152,11 +207,11 @@ with st.expander("📋 장르별 편수 상세"):
     show1.index = range(1, len(show1)+1)
     st.dataframe(show1.rename(columns={'genre':'장르'}), use_container_width=True)
 
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 
 
 # ═════════════════════════════════════════
-# 섹션 2: 장르 × 영화 트리맵
+# 섹션 2: 트리맵
 # ═════════════════════════════════════════
 st.markdown('<div class="section-header">🗺️ 2. 장르별 · 영화별 총 관객 트리맵</div>',
             unsafe_allow_html=True)
@@ -172,18 +227,14 @@ fig2 = px.treemap(
     custom_data=['movieNm', 'total_audi'],
 )
 fig2.update_traces(
-    hovertemplate=(
-        '<b>%{customdata[0]}</b><br>'
-        '총 관객: %{customdata[1]:,}명'
-        '<extra></extra>'
-    ),
-    textfont=dict(size=13),
+    hovertemplate='<b>%{customdata[0]}</b><br>총 관객: %{customdata[1]:,}명<extra></extra>',
+    textfont=dict(size=13, color='#ffffff'),
     texttemplate='%{label}',
-    marker=dict(line=dict(width=1, color='#0f0f1a')),
+    marker=dict(line=dict(width=1.5, color='#0f0f1a')),
 )
 fig2.update_layout(
     **BASE_LAYOUT,
-    title=dict(text='<b>장르별 영화 총 관객 트리맵</b> (칸 크기 = 총 관객수)',
+    title=dict(text='<b>장르별 영화 총 관객 트리맵</b>  ·  칸 크기 = 총 관객수',
                font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
     margin=dict(t=60, b=20, l=10, r=10),
 )
@@ -199,14 +250,13 @@ st.markdown("""
 
 with st.expander("📋 총 관객 상위 20편"):
     show2 = (tree_df[['movieNm','genre','total_audi']]
-             .sort_values('total_audi', ascending=False)
-             .head(20).copy())
+             .sort_values('total_audi', ascending=False).head(20).copy())
     show2.index = range(1, len(show2)+1)
     show2['total_audi'] = show2['total_audi'].apply(lambda x: f"{int(x):,}명")
     show2.columns = ['영화명','장르','총 관객수']
     st.dataframe(show2, use_container_width=True)
 
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 
 
 # ═════════════════════════════════════════
@@ -215,33 +265,32 @@ st.markdown("<hr>", unsafe_allow_html=True)
 st.markdown('<div class="section-header">📊 3. 총 관객 분포 히스토그램</div>',
             unsafe_allow_html=True)
 
-max_row   = df.loc[df['total_audi'].idxmax()]
-max_movie = max_row['movieNm']
-max_audi  = int(max_row['total_audi'])
+max_row    = df.loc[df['total_audi'].idxmax()]
+max_movie  = max_row['movieNm']
+max_audi   = int(max_row['total_audi'])
 median_val = int(df['total_audi'].median())
 
 fig3 = go.Figure()
 fig3.add_trace(go.Histogram(
-    x=df['total_audi'],
-    nbinsx=30,
-    marker=dict(color='#e50914', line=dict(color='#0f0f1a', width=1), opacity=0.85),
+    x=df['total_audi'], nbinsx=30,
+    marker=dict(color='#e50914', line=dict(color='#1a1a2e', width=1), opacity=0.9),
     hovertemplate='관객 구간: %{x:,}명<br>영화 수: %{y}편<extra></extra>',
     name='영화 수',
 ))
 fig3.add_vline(
-    x=median_val,
-    line=dict(color='#ffd700', width=2, dash='dash'),
-    annotation=dict(text=f"중앙값<br>{median_val:,}명",
+    x=median_val, line=dict(color='#ffd700', width=2, dash='dash'),
+    annotation=dict(text=f"중앙값  {median_val:,}명",
                     font=dict(color='#ffd700', size=11),
-                    bgcolor='rgba(15,15,26,0.8)', bordercolor='#ffd700'),
+                    bgcolor='rgba(26,26,46,0.9)', bordercolor='#ffd700',
+                    borderwidth=1),
     annotation_position='top right',
 )
 fig3.add_vline(
-    x=max_audi,
-    line=dict(color='#00cfff', width=2, dash='dot'),
-    annotation=dict(text=f"최고 흥행<br>{max_movie}<br>{max_audi:,}명",
+    x=max_audi, line=dict(color='#00cfff', width=2, dash='dot'),
+    annotation=dict(text=f"최고 흥행  {max_movie}  {max_audi:,}명",
                     font=dict(color='#00cfff', size=11),
-                    bgcolor='rgba(15,15,26,0.8)', bordercolor='#00cfff'),
+                    bgcolor='rgba(26,26,46,0.9)', bordercolor='#00cfff',
+                    borderwidth=1),
     annotation_position='top left',
 )
 fig3.update_layout(
@@ -249,9 +298,11 @@ fig3.update_layout(
     title=dict(text='<b>총 관객 분포</b>',
                font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
     xaxis=dict(title='총 관객수 (명)', title_font=dict(color='#aaaaaa'),
-               showgrid=True, gridcolor='#222244', tickformat=','),
+               showgrid=True, gridcolor='#2a2a44', tickformat=',',
+               tickfont=dict(color='#cccccc')),
     yaxis=dict(title='영화 편수', title_font=dict(color='#aaaaaa'),
-               showgrid=True, gridcolor='#222244'),
+               showgrid=True, gridcolor='#2a2a44',
+               tickfont=dict(color='#cccccc')),
     bargap=0.05, hovermode='x unified',
     margin=dict(t=60, b=40, l=60, r=30),
 )
@@ -259,11 +310,10 @@ st.plotly_chart(fig3, use_container_width=True)
 
 under_100 = int((df['total_audi'] < 1_000_000).sum())
 pct_under = round(under_100 / len(df) * 100, 1)
-
 st.markdown(f"""
 <div class="info-box">
 💡 <b>이 그래프로 알 수 있는 것:</b>
-전체 {len(df)}편 중 <b>{under_100}편({pct_under}%)</b>이 총 관객 100만 명 미만에 분포하며,
+전체 {len(df)}편 중 <b>{under_100}편({pct_under}%)</b>이 총 관객 100만 명 미만에 분포합니다.
 가장 관객이 많은 영화는 <b>'{max_movie}'({max_audi:,}명)</b>으로
 중앙값({median_val:,}명)의 <b>{round(max_audi/median_val,1)}배</b>에 달합니다.
 </div>
@@ -271,40 +321,34 @@ st.markdown(f"""
 
 with st.expander("📋 총 관객 기초 통계"):
     stat = df['total_audi'].describe().rename({
-        'count':'편수','mean':'평균','std':'표준편차',
-        'min':'최솟값','25%':'하위 25%','50%':'중앙값',
-        '75%':'상위 25%','max':'최댓값'})
-    stat_df = pd.DataFrame({'값': stat.apply(lambda x: f"{int(x):,}명")})
-    st.dataframe(stat_df, use_container_width=True)
+        'count':'편수','mean':'평균','std':'표준편차','min':'최솟값',
+        '25%':'하위 25%','50%':'중앙값','75%':'상위 25%','max':'최댓값'})
+    st.dataframe(
+        pd.DataFrame({'값': stat.apply(lambda x: f"{int(x):,}명")}),
+        use_container_width=True)
 
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 
 
 # ═════════════════════════════════════════
-# 섹션 4: 개봉일 스크린수 × 총 관객 산점도
+# 섹션 4: 산점도 (스크린수 × 총관객)
 # ═════════════════════════════════════════
 st.markdown('<div class="section-header">🔵 4. 개봉일 스크린수 × 총 관객 산점도</div>',
             unsafe_allow_html=True)
-
-# 장르별 색상 매핑
-genres_sorted = sorted(df['genre'].unique())
-genre_color_map = {g: DONUT_COLORS[i % len(DONUT_COLORS)]
-                   for i, g in enumerate(genres_sorted)}
 
 scatter_df = df[['movieNm','genre','first_scrn','total_audi']].dropna()
 
 fig4 = px.scatter(
     scatter_df,
-    x='first_scrn',
-    y='total_audi',
+    x='first_scrn', y='total_audi',
     color='genre',
     color_discrete_map=genre_color_map,
     custom_data=['movieNm','genre'],
     labels={'first_scrn':'개봉일 스크린수','total_audi':'총 관객수','genre':'장르'},
-    title='<b>개봉일 스크린수 × 총 관객</b>',
 )
 fig4.update_traces(
-    marker=dict(size=9, opacity=0.85, line=dict(width=0.5, color='#0f0f1a')),
+    marker=dict(size=10, opacity=0.85,
+                line=dict(width=0.8, color='#0f0f1a')),
     hovertemplate=(
         '<b>%{customdata[0]}</b><br>'
         '장르: %{customdata[1]}<br>'
@@ -318,11 +362,14 @@ fig4.update_layout(
     title=dict(text='<b>개봉일 스크린수 × 총 관객</b>',
                font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
     xaxis=dict(title='개봉일 스크린수 (개)', title_font=dict(color='#aaaaaa'),
-               showgrid=True, gridcolor='#222244', tickformat=','),
+               showgrid=True, gridcolor='#2a2a44', tickformat=',',
+               tickfont=dict(color='#cccccc')),
     yaxis=dict(title='총 관객수 (명)', title_font=dict(color='#aaaaaa'),
-               showgrid=True, gridcolor='#222244', tickformat=','),
-    legend=dict(title='장르', bgcolor='rgba(18,18,31,0.9)',
-                bordercolor='#333355', borderwidth=1),
+               showgrid=True, gridcolor='#2a2a44', tickformat=',',
+               tickfont=dict(color='#cccccc')),
+    legend=dict(title=dict(text='장르', font=dict(color='#ffd700')),
+                bgcolor='rgba(26,26,46,0.95)', bordercolor='#444466',
+                borderwidth=1, font=dict(color='#e0e0e0')),
     hovermode='closest',
     margin=dict(t=60, b=40, l=70, r=30),
 )
@@ -334,24 +381,20 @@ st.markdown(f"""
 💡 <b>이 그래프로 알 수 있는 것:</b>
 개봉일 스크린수와 총 관객수의 상관계수는 <b>{corr4:.2f}</b>로,
 스크린을 많이 확보한 영화일수록 총 관객도 많은 경향이 있습니다.
-점에 마우스를 올리면 영화명과 장르를 확인할 수 있습니다.
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 
 
 # ═════════════════════════════════════════
-# 섹션 5: 장르별 총 관객 박스플롯 (10편 이상 장르만)
+# 섹션 5: 박스플롯 (10편 이상 장르)
 # ═════════════════════════════════════════
 st.markdown('<div class="section-header">📦 5. 장르별 총 관객 분포 (박스플롯)</div>',
             unsafe_allow_html=True)
 
-# 10편 이상 장르만 필터
-genre_10 = genre_count[genre_count['편수'] >= 10]['genre'].tolist()
-box_df   = df[df['genre'].isin(genre_10)].copy()
-
-# 장르별 중앙값 기준 내림차순 정렬
+genre_10  = genre_count[genre_count['편수'] >= 10]['genre'].tolist()
+box_df    = df[df['genre'].isin(genre_10)].copy()
 genre_order = (box_df.groupby('genre')['total_audi']
                      .median()
                      .sort_values(ascending=False)
@@ -362,49 +405,43 @@ for i, g in enumerate(genre_order):
     gdf   = box_df[box_df['genre'] == g]
     color = DONUT_COLORS[i % len(DONUT_COLORS)]
     fig5.add_trace(go.Box(
-        y=gdf['total_audi'],
-        name=g,
-        marker=dict(color=color, size=5,
-                    line=dict(color='#0f0f1a', width=1)),
-        line=dict(color=color),
-        boxmean=True,                      # 평균선 표시
-        # 아웃라이어에 영화명 표시
+        y=gdf['total_audi'], name=g,
+        marker=dict(color=color, size=6,
+                    line=dict(color='#ffffff', width=0.8)),
+        line=dict(color=color, width=2),
+        fillcolor=color.replace('#', 'rgba(') if False else color,
+        boxmean=True,
         text=gdf['movieNm'],
-        hovertemplate=(
-            '<b>%{text}</b><br>'
-            '총 관객: %{y:,}명'
-            '<extra></extra>'
-        ),
+        hovertemplate='<b>%{text}</b><br>총 관객: %{y:,}명<extra></extra>',
     ))
-
 fig5.update_layout(
     **BASE_LAYOUT,
-    title=dict(text='<b>장르별 총 관객 분포</b> (10편 이상 장르)',
+    title=dict(text='<b>장르별 총 관객 분포</b>  ·  10편 이상 장르만',
                font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
     xaxis=dict(title='장르', title_font=dict(color='#aaaaaa'),
-               tickfont=dict(color='#cccccc')),
+               tickfont=dict(color='#e0e0e0', size=12),
+               showgrid=False),
     yaxis=dict(title='총 관객수 (명)', title_font=dict(color='#aaaaaa'),
-               showgrid=True, gridcolor='#222244', tickformat=','),
-    showlegend=False,
-    hovermode='closest',
+               showgrid=True, gridcolor='#2a2a44', tickformat=',',
+               tickfont=dict(color='#cccccc')),
+    showlegend=False, hovermode='closest',
     margin=dict(t=60, b=60, l=70, r=30),
 )
 st.plotly_chart(fig5, use_container_width=True)
 
-top_genre = genre_order[0]
 st.markdown(f"""
 <div class="info-box">
 💡 <b>이 그래프로 알 수 있는 것:</b>
-10편 이상 개봉한 장르 중 중앙값 기준으로 <b>{top_genre}</b> 장르의 총 관객 중앙값이 가장 높습니다.
+10편 이상 개봉한 장르 중 <b>{genre_order[0]}</b> 장르의 총 관객 중앙값이 가장 높습니다.
 상자 밖으로 튀어나온 점(아웃라이어)에 마우스를 올리면 해당 영화명을 확인할 수 있습니다.
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 
 
 # ═════════════════════════════════════════
-# 섹션 6: 버블 그래프 (스크린수 × 총관객, 크기=첫 주 관객)
+# 섹션 6: 버블 그래프
 # ═════════════════════════════════════════
 st.markdown('<div class="section-header">🫧 6. 개봉일 스크린수 × 총 관객 버블 그래프</div>',
             unsafe_allow_html=True)
@@ -414,9 +451,8 @@ bubble_df = bubble_df[bubble_df['first_week_audi'] > 0]
 
 fig6 = px.scatter(
     bubble_df,
-    x='first_scrn',
-    y='total_audi',
-    size='first_week_audi',             # 버블 크기 = 첫 주 관객
+    x='first_scrn', y='total_audi',
+    size='first_week_audi',
     color='genre',
     color_discrete_map=genre_color_map,
     custom_data=['movieNm','genre','first_week_audi'],
@@ -424,7 +460,7 @@ fig6 = px.scatter(
     labels={'first_scrn':'개봉일 스크린수','total_audi':'총 관객수','genre':'장르'},
 )
 fig6.update_traces(
-    marker=dict(opacity=0.75, line=dict(width=0.5, color='#0f0f1a')),
+    marker=dict(opacity=0.75, line=dict(width=0.8, color='#0f0f1a')),
     hovertemplate=(
         '<b>%{customdata[0]}</b><br>'
         '장르: %{customdata[1]}<br>'
@@ -436,14 +472,17 @@ fig6.update_traces(
 )
 fig6.update_layout(
     **BASE_LAYOUT,
-    title=dict(text='<b>개봉일 스크린수 × 총 관객</b> — 버블 크기: 첫 주 관객',
+    title=dict(text='<b>개봉일 스크린수 × 총 관객</b>  ·  버블 크기 = 첫 주 관객',
                font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
     xaxis=dict(title='개봉일 스크린수 (개)', title_font=dict(color='#aaaaaa'),
-               showgrid=True, gridcolor='#222244', tickformat=','),
+               showgrid=True, gridcolor='#2a2a44', tickformat=',',
+               tickfont=dict(color='#cccccc')),
     yaxis=dict(title='총 관객수 (명)', title_font=dict(color='#aaaaaa'),
-               showgrid=True, gridcolor='#222244', tickformat=','),
-    legend=dict(title='장르', bgcolor='rgba(18,18,31,0.9)',
-                bordercolor='#333355', borderwidth=1),
+               showgrid=True, gridcolor='#2a2a44', tickformat=',',
+               tickfont=dict(color='#cccccc')),
+    legend=dict(title=dict(text='장르', font=dict(color='#ffd700')),
+                bgcolor='rgba(26,26,46,0.95)', bordercolor='#444466',
+                borderwidth=1, font=dict(color='#e0e0e0')),
     hovermode='closest',
     margin=dict(t=60, b=40, l=70, r=30),
 )
@@ -457,11 +496,11 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown("<hr>", unsafe_allow_html=True)
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
 
 
 # ═════════════════════════════════════════
-# 섹션 7: 국가 → 장르 선버스트
+# 섹션 7: 선버스트 (국가 → 장르)
 # ═════════════════════════════════════════
 st.markdown('<div class="section-header">☀️ 7. 제작 국가 → 장르 선버스트</div>',
             unsafe_allow_html=True)
@@ -476,7 +515,6 @@ fig7 = px.sunburst(
     values='편수',
     color='nation',
     color_discrete_sequence=DONUT_COLORS,
-    custom_data=['편수'],
 )
 fig7.update_traces(
     hovertemplate=(
@@ -485,19 +523,19 @@ fig7.update_traces(
         '비율: %{percentRoot:.1%}'
         '<extra></extra>'
     ),
-    textfont=dict(size=12),
+    textfont=dict(size=12, color='#ffffff'),
     insidetextorientation='auto',
     marker=dict(line=dict(color='#0f0f1a', width=1.5)),
 )
 fig7.update_layout(
     **BASE_LAYOUT,
-    title=dict(text='<b>제작 국가 → 장르</b> 선버스트 (칸 크기 = 편수)',
+    title=dict(text='<b>제작 국가 → 장르</b>  ·  칸 크기 = 편수',
                font=dict(size=17, color='#ffffff'), x=0.5, xanchor='center'),
     margin=dict(t=60, b=20, l=20, r=20),
 )
 st.plotly_chart(fig7, use_container_width=True)
 
-top_nation = (df.groupby('nation').size().idxmax())
+top_nation     = df.groupby('nation').size().idxmax()
 top_nation_cnt = int(df.groupby('nation').size().max())
 st.markdown(f"""
 <div class="info-box">
