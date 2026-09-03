@@ -594,3 +594,34 @@ if st.button("🚀 흥행 예측하기", use_container_width=True):
         <h4 style='color:#ffffff;'>{msg}</h4>
     </div>
     """, unsafe_allow_html=True)
+
+st.markdown('<div class="section-header">❓ 깜짝 퀴즈: 나는 누구일까요?</div>', unsafe_allow_html=True)
+
+# 무작위로 관객수 100만 이상의 영화 하나 선택
+if 'quiz_movie' not in st.session_state:
+    st.session_state.quiz_movie = df[df['total_audi'] > 1000000].sample(1).iloc[0]
+
+quiz = st.session_state.quiz_movie
+
+col1, col2 = st.columns([1, 1])
+with col1:
+    st.markdown("### 힌트 데이터")
+    st.markdown(f"- **장르:** {quiz['genre']}")
+    st.markdown(f"- **제작 국가:** {quiz['nation']}")
+    st.markdown(f"- **개봉일 스크린 수:** {quiz['first_scrn']:,}개")
+    st.markdown(f"- **최종 관객 수:** {int(quiz['total_audi']):,}명")
+
+with col2:
+    st.markdown("### 정답 맞추기")
+    guess = st.text_input("이 영화의 제목은 무엇일까요?")
+    
+    if st.button("정답 확인"):
+        if guess.replace(" ", "") == quiz['movieNm'].replace(" ", ""):
+            st.balloons()
+            st.success(f"정답입니다! 🎉 영화 제목은 **{quiz['movieNm']}** 입니다.")
+        else:
+            st.error("앗, 틀렸습니다. 다시 시도해 보세요!")
+            
+    if st.button("다른 영화로 변경"):
+        st.session_state.quiz_movie = df[df['total_audi'] > 1000000].sample(1).iloc[0]
+        st.experimental_rerun()
