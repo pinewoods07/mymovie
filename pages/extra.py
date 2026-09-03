@@ -81,7 +81,7 @@ st.markdown("""
 # ─────────────────────────────────────────
 BASE_LAYOUT = dict(
     plot_bgcolor='#12121f',
-    paper_bgcolor='#1a1a2e',          # 그래프 바깥 배경을 약간 밝게
+    paper_bgcolor='#1a1a2e',
     font=dict(color='#e0e0e0', family='Malgun Gothic, sans-serif'),
 )
 
@@ -409,7 +409,6 @@ for i, g in enumerate(genre_order):
         marker=dict(color=color, size=6,
                     line=dict(color='#ffffff', width=0.8)),
         line=dict(color=color, width=2),
-        fillcolor=color.replace('#', 'rgba(') if False else color,
         boxmean=True,
         text=gdf['movieNm'],
         hovertemplate='<b>%{text}</b><br>총 관객: %{y:,}명<extra></extra>',
@@ -552,6 +551,12 @@ with st.expander("📋 국가 × 장르 편수 상세"):
     show7.columns = ['제작 국가','장르','편수']
     st.dataframe(show7, use_container_width=True)
 
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
+
+
+# ═════════════════════════════════════════
+# 특별 부록: 흥행 예측 시뮬레이터
+# ═════════════════════════════════════════
 st.markdown('<div class="section-header">🔮 특별 부록: 나의 영화 흥행 예측 시뮬레이터</div>', unsafe_allow_html=True)
 
 st.markdown("""
@@ -567,15 +572,15 @@ sim_nation = c2.selectbox("제작 국가", df['nation'].unique())
 sim_scrn = c3.slider("초기 확보 스크린 수", 10, 3000, 500)
 
 if st.button("🚀 흥행 예측하기", use_container_width=True):
-    # 간단한 로직: 해당 장르의 (관객수/스크린수) 평균 효율을 곱함
-    genre_efficiency = df[df['genre'] == sim_genre]['total_audi'].sum() / (df[df['genre'] == sim_genre]['first_scrn'].sum() + 1)
+    # 장르별 스크린당 관객 효율
+    genre_data = df[df['genre'] == sim_genre]
+    genre_efficiency = genre_data['total_audi'].sum() / (genre_data['first_scrn'].sum() + 1)
     
-    # 국가별 가중치 (데이터가 있는 국가면 평균 관객수 비례)
-    nation_weight = 1.0
-    if len(df[df['nation'] == sim_nation]) > 0:
-        nation_weight = df[df['nation'] == sim_nation]['total_audi'].mean() / df['total_audi'].mean()
+    # 국가별 가중치 계산
+    nation_data = df[df['nation'] == sim_nation]
+    nation_weight = (nation_data['total_audi'].mean() / df['total_audi'].mean()) if len(nation_data) > 0 else 1.0
     
-    # 최종 예측
+    # 최종 예상 관객 수
     predicted_audi = int(sim_scrn * genre_efficiency * nation_weight)
     
     if predicted_audi > 5000000:
@@ -595,33 +600,44 @@ if st.button("🚀 흥행 예측하기", use_container_width=True):
     </div>
     """, unsafe_allow_html=True)
 
+st.markdown("<div class='custom-hr'></div>", unsafe_allow_html=True)
+
+
+# ═════════════════════════════════════════
+# 깜짝 퀴즈: 나는 누구일까요?
+# ═════════════════════════════════════════
 st.markdown('<div class="section-header">❓ 깜짝 퀴즈: 나는 누구일까요?</div>', unsafe_allow_html=True)
 
-# 무작위로 관객수 100만 이상의 영화 하나 선택
+# 100만 이상 관객 영화 중 랜덤 추출
 if 'quiz_movie' not in st.session_state:
-    st.session_state.quiz_movie = df[df['total_audi'] > 1000000].sample(1).iloc[0]
+    st.session_state.quiz_movie = df[df['total_audi'] >= 1000000].sample(1).iloc[0]
 
 quiz = st.session_state.quiz_movie
 
 col1, col2 = st.columns([1, 1])
 with col1:
-    st.markdown("### 힌트 데이터")
+    st.markdown("### 🔍 힌트 데이터")
     st.markdown(f"- **장르:** {quiz['genre']}")
     st.markdown(f"- **제작 국가:** {quiz['nation']}")
     st.markdown(f"- **개봉일 스크린 수:** {quiz['first_scrn']:,}개")
     st.markdown(f"- **최종 관객 수:** {int(quiz['total_audi']):,}명")
 
 with col2:
-    st.markdown("### 정답 맞추기")
-    guess = st.text_input("이 영화의 제목은 무엇일까요?")
+    st.markdown("### ✍️ 정답 맞추기")
+    guess = st.text_input("이 영화의 제목은 무엇일까요?", placeholder="영화 제목 입력")
     
-    if st.button("정답 확인"):
-        if guess.replace(" ", "") == quiz['movieNm'].replace(" ", ""):
-            st.balloons()
-            st.success(f"정답입니다! 🎉 영화 제목은 **{quiz['movieNm']}** 입니다.")
-        else:
-            st.error("앗, 틀렸습니다. 다시 시도해 보세요!")
-            
-    if st.button("다른 영화로 변경"):
-        st.session_state.quiz_movie = df[df['total_audi'] > 1000000].sample(1).iloc[0]
-        st.experimental_rerun()
+    btn_col1, btn_col2 = st.columns(2)
+    with btn_col1:
+        if st.button("정답 확인", use_container_width=True):
+            user_ans = guess.replace(" ", "").strip().lower()
+            real_ans = str(quiz['movieNm']).replace(" ", "").strip().lower()
+            if user_ans and user_ans == real_ans:
+                st.balloons()
+                st.success(f"정답입니다! 🎉 영화 제목은 **{quiz['movieNm']}** 입니다.")
+            else:
+                st.error("앗, 틀렸습니다. 다시 시도해 보세요!")
+                
+    with btn_col2:
+        if st.button("다른 영화로 변경", use_container_width=True):
+            st.session_state.quiz_movie = df[df['total_audi'] >= 1000000].sample(1).iloc[0]
+            st.rerun()  # ✅ Streamlit 최신 버전 새로고침 메서드
