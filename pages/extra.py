@@ -551,3 +551,46 @@ with st.expander("📋 국가 × 장르 편수 상세"):
     show7.index = range(1, len(show7)+1)
     show7.columns = ['제작 국가','장르','편수']
     st.dataframe(show7, use_container_width=True)
+
+st.markdown('<div class="section-header">🔮 특별 부록: 나의 영화 흥행 예측 시뮬레이터</div>', unsafe_allow_html=True)
+
+st.markdown("""
+<div class="info-box" style="border-color:#ff7f50; color:#ffe4b5;">
+💡 <b>가상 개봉 시나리오:</b> 당신이 영화 제작자가 되어 개봉 조건을 설정해보세요! 
+과거 데이터를 바탕으로 예상 관객 수를 예측해 드립니다.
+</div>
+""", unsafe_allow_html=True)
+
+c1, c2, c3 = st.columns(3)
+sim_genre = c1.selectbox("가상 영화 장르", df['genre'].unique())
+sim_nation = c2.selectbox("제작 국가", df['nation'].unique())
+sim_scrn = c3.slider("초기 확보 스크린 수", 10, 3000, 500)
+
+if st.button("🚀 흥행 예측하기", use_container_width=True):
+    # 간단한 로직: 해당 장르의 (관객수/스크린수) 평균 효율을 곱함
+    genre_efficiency = df[df['genre'] == sim_genre]['total_audi'].sum() / (df[df['genre'] == sim_genre]['first_scrn'].sum() + 1)
+    
+    # 국가별 가중치 (데이터가 있는 국가면 평균 관객수 비례)
+    nation_weight = 1.0
+    if len(df[df['nation'] == sim_nation]) > 0:
+        nation_weight = df[df['nation'] == sim_nation]['total_audi'].mean() / df['total_audi'].mean()
+    
+    # 최종 예측
+    predicted_audi = int(sim_scrn * genre_efficiency * nation_weight)
+    
+    if predicted_audi > 5000000:
+        msg, color, emoji = "초대박 천만 가즈아!", "#e50914", "🔥"
+    elif predicted_audi > 2000000:
+        msg, color, emoji = "손익분기점 돌파! 흥행 성공", "#ffd700", "🎉"
+    elif predicted_audi > 500000:
+        msg, color, emoji = "무난한 성적", "#00cfff", "👍"
+    else:
+        msg, color, emoji = "독립영화의 길... 매니아층 형성", "#87ceeb", "🎬"
+
+    st.markdown(f"""
+    <div style='text-align:center; padding:30px; background-color:#1a1a2e; border-radius:15px; border:2px solid {color}; margin-top:20px;'>
+        <h3 style='color:#aaaaaa;'>예상 총 관객 수</h3>
+        <h1 style='color:{color}; font-size:3rem;'>{emoji} {predicted_audi:,}명</h1>
+        <h4 style='color:#ffffff;'>{msg}</h4>
+    </div>
+    """, unsafe_allow_html=True)
